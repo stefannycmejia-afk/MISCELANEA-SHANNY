@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
 
 // --- Configuración ---
-const WHATSAPP_NUMBER = "573000000000"; // Reemplaza con tu número real
+const WHATSAPP_NUMBER = "573004626384"; // Reemplaza con tu número real
 
 interface Product {
   id: number;
@@ -35,6 +35,9 @@ function App() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [isAddProductOpen, setIsAddProductOpen] = useState(false);
+  const [newProduct, setNewProduct] = useState({ nombre: '', categoria: '', precio: '', descripcion: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -141,6 +144,39 @@ function App() {
     showToast('Sesión cerrada');
   };
 
+  const handleAddProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const precioNum = Number(newProduct.precio);
+    if (!newProduct.nombre || !newProduct.categoria || isNaN(precioNum) || precioNum <= 0) {
+      return showToast('Por favor completa todos los campos requeridos correctamente');
+    }
+    setIsSubmitting(true);
+    try {
+      const { data, error } = await supabase.from('productos').insert([
+        { 
+          nombre: newProduct.nombre, 
+          categoria: newProduct.categoria, 
+          precio: precioNum, 
+          descripcion: newProduct.descripcion || null
+        }
+      ]).select();
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        setProducts((prev) => [...prev, data[0]]);
+        showToast('Producto agregado exitosamente');
+        setIsAddProductOpen(false);
+        setNewProduct({ nombre: '', categoria: '', precio: '', descripcion: '' });
+      }
+    } catch (err: any) {
+      showToast('Error al agregar el producto');
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleServiceClick = (serviceName: string) => {
     const msg = `Hola Shanny, me interesa el servicio de: *${serviceName}*.`;
     sendToWhatsApp(msg);
@@ -227,7 +263,14 @@ function App() {
 
       <section id="productos" className="products-section">
         <div className="container">
-          <h2 className="section-title">Nuestros Productos</h2>
+          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px'}}>
+            <h2 className="section-title" style={{marginBottom: 0}}>Nuestros Productos</h2>
+            {session && (
+              <button className="btn-pedidos" onClick={() => setIsAddProductOpen(true)} style={{background: 'var(--primary)', color: 'white', border: 'none', padding: '8px 16px'}}>
+                + Añadir Producto
+              </button>
+            )}
+          </div>
           <div className="search-container">
             <div style={{display:'flex', gap: '10px', marginBottom: '10px'}}>
                <input type="text" placeholder="🔍 Buscar productos..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="search-input" style={{flex: 1}} />
@@ -279,7 +322,15 @@ function App() {
         </div>
       </section>
 
-      <footer className="main-footer"><p>© 2025 Miscelánea Shanny · Todos los derechos reservados</p></footer>
+      <footer className="main-footer">
+        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px', padding: '20px 0'}}>
+          <div style={{textAlign: 'center'}}>
+            <p style={{marginBottom: '10px', fontSize: '14px', color: 'var(--ink-muted)'}}>Escanea para llevar la tienda en tu celular:</p>
+            <img src="/qr-code.png" alt="Código QR de Miscelánea Shanny" style={{width: '120px', height: '120px', borderRadius: '8px', padding: '5px', background: 'white'}} />
+          </div>
+          <p style={{marginTop: '10px'}}>© 2025 Miscelánea Shanny · Todos los derechos reservados</p>
+        </div>
+      </footer>
 
       <button className="floating-btn" onClick={() => setIsCartOpen(true)}>
         🛒 Ver Carrito {cartCount > 0 && <span className="badge">{cartCount}</span>}
@@ -336,6 +387,39 @@ function App() {
           </div>
         </div>
       )}
+
+      {isAddProductOpen && (
+        <div className="cart-modal-overlay" onClick={() => setIsAddProductOpen(false)}>
+          <div className="cart-modal" onClick={(e) => e.stopPropagation()} style={{maxWidth: '500px'}}>
+            <div className="cart-header"><h2>Añadir Nuevo Producto</h2><button className="close-btn" onClick={() => setIsAddProductOpen(false)}>×</button></div>
+            <div className="cart-content" style={{padding: '20px'}}>
+              <form onSubmit={handleAddProduct} style={{display: 'flex', flexDirection: 'column', gap: '15px'}}>
+                <div>
+                  <label style={{display: 'block', marginBottom: '5px', fontSize: '14px', fontWeight: 600}}>Nombre del Producto *</label>
+                  <input type="text" value={newProduct.nombre} onChange={(e) => setNewProduct({...newProduct, nombre: e.target.value})} required className="search-input" style={{width: '100%', padding: '10px'}} placeholder="Ej. Cuaderno cuadriculado" />
+                </div>
+                <div>
+                  <label style={{display: 'block', marginBottom: '5px', fontSize: '14px', fontWeight: 600}}>Categoría *</label>
+                  <input type="text" value={newProduct.categoria} onChange={(e) => setNewProduct({...newProduct, categoria: e.target.value})} required className="search-input" style={{width: '100%', padding: '10px'}} placeholder="Ej. Papelería" />
+                </div>
+                <div>
+                  <label style={{display: 'block', marginBottom: '5px', fontSize: '14px', fontWeight: 600}}>Precio (COP) *</label>
+                  <input type="number" value={newProduct.precio} onChange={(e) => setNewProduct({...newProduct, precio: e.target.value})} required min="1" className="search-input" style={{width: '100%', padding: '10px'}} placeholder="Ej. 15000" />
+                </div>
+                <div>
+                  <label style={{display: 'block', marginBottom: '5px', fontSize: '14px', fontWeight: 600}}>Descripción (Opcional)</label>
+                  <textarea value={newProduct.descripcion} onChange={(e) => setNewProduct({...newProduct, descripcion: e.target.value})} className="search-input" style={{width: '100%', padding: '10px', minHeight: '80px', resize: 'vertical'}} placeholder="Detalles del producto..."></textarea>
+                </div>
+                <div className="modal-btns" style={{marginTop: '10px', justifyContent: 'flex-end'}}>
+                  <button type="button" className="btn-clear" onClick={() => setIsAddProductOpen(false)}>Cancelar</button>
+                  <button type="submit" className="btn-checkout" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Guardar Producto'}</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className={`toast ${toast.show ? 'show' : ''}`}>{toast.msg}</div>
     </div>
   );
