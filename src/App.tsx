@@ -31,6 +31,24 @@ function App() {
   const [toast, setToast] = useState({ show: false, msg: '' });
   const [loading, setLoading] = useState(true);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [session, setSession] = useState<any>(null);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     async function fetchProducts() {
@@ -101,6 +119,28 @@ function App() {
     }
   };
 
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password: loginPassword,
+      });
+      if (error) throw error;
+      showToast('Sesión iniciada como administrador');
+      setIsLoginOpen(false);
+      setLoginEmail('');
+      setLoginPassword('');
+    } catch (err: any) {
+      showToast('Error: Credenciales incorrectas');
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    showToast('Sesión cerrada');
+  };
+
   const handleServiceClick = (serviceName: string) => {
     const msg = `Hola Shanny, me interesa el servicio de: *${serviceName}*.`;
     sendToWhatsApp(msg);
@@ -131,6 +171,15 @@ function App() {
           <a href="#productos">Productos</a>
           <a href="#servicios">Servicios</a>
           <a href="#contacto">Contacto</a>
+          {session ? (
+            <button className="btn-pedidos" onClick={handleLogout} style={{background: 'var(--ink)', color: 'white', border: 'none'}}>
+              Cerrar sesión
+            </button>
+          ) : (
+            <button className="btn-pedidos" onClick={() => setIsLoginOpen(true)} style={{background: 'transparent', color: 'var(--ink)', border: '1px solid var(--border)'}}>
+              Admin
+            </button>
+          )}
           <button className="btn-pedidos" onClick={() => setIsCartOpen(true)}>
             Pedidos {cartCount > 0 && <span className="badge">{cartCount}</span>}
           </button>
@@ -262,6 +311,27 @@ function App() {
                 <button className="btn-clear" onClick={() => setCart({})}>Limpiar</button>
                 <button className="btn-checkout" onClick={handleCheckout}>Enviar a WhatsApp</button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isLoginOpen && (
+        <div className="cart-modal-overlay" onClick={() => setIsLoginOpen(false)}>
+          <div className="cart-modal" onClick={(e) => e.stopPropagation()} style={{maxWidth: '400px'}}>
+            <div className="cart-header"><h2>Acceso Administrador</h2><button className="close-btn" onClick={() => setIsLoginOpen(false)}>×</button></div>
+            <div className="cart-content" style={{padding: '20px'}}>
+              <form onSubmit={handleLogin} style={{display: 'flex', flexDirection: 'column', gap: '15px'}}>
+                <div>
+                  <label style={{display: 'block', marginBottom: '5px', fontSize: '14px', fontWeight: 600}}>Correo Electrónico</label>
+                  <input type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required className="search-input" style={{width: '100%', padding: '10px'}} placeholder="ejemplo@correo.com" />
+                </div>
+                <div>
+                  <label style={{display: 'block', marginBottom: '5px', fontSize: '14px', fontWeight: 600}}>Contraseña</label>
+                  <input type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required className="search-input" style={{width: '100%', padding: '10px'}} placeholder="********" />
+                </div>
+                <button type="submit" className="btn-checkout" style={{marginTop: '10px', width: '100%'}}>Entrar como Admin</button>
+              </form>
             </div>
           </div>
         </div>
