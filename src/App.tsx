@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from './lib/supabase';
 
 // --- Configuración ---
@@ -74,7 +74,7 @@ function App() {
   };
 
   const cartItems = Object.values(cart);
-  const cartTotal = cartItems.reduce((acc, item) => acc + item.price * item.qty, 0);
+  const cartTotal = cartItems.reduce((acc, item) => acc + item.precio * item.qty, 0);
   const cartCount = cartItems.reduce((acc, item) => acc + item.qty, 0);
 
   const fmt = (n: number) => '$' + n.toLocaleString('es-CO');
@@ -90,7 +90,7 @@ function App() {
       await supabase.from('pedidos').insert([{ items: cartItems, total: cartTotal }]);
       let msg = `✨ *NUEVO PEDIDO - MISCELÁNEA SHANNY*\n\n`;
       cartItems.forEach(item => {
-        msg += `• ${item.nombre} (x${item.qty}) - ${fmt(item.price * item.qty)}\n`;
+        msg += `• ${item.nombre} (x${item.qty}) - ${fmt(item.precio * item.qty)}\n`;
       });
       msg += `\n💰 *TOTAL: ${fmt(cartTotal)}*`;
       sendToWhatsApp(msg);
@@ -245,7 +245,7 @@ function App() {
                 <div className="cart-items">
                   {cartItems.map(item => (
                     <div key={item.id} className="cart-item">
-                      <div className="item-info"><h4>{item.nombre}</h4><p>{fmt(item.price)}</p></div>
+                      <div className="item-info"><h4>{item.nombre}</h4><p>{fmt(item.precio)}</p></div>
                       <div className="item-actions">
                         <button onClick={() => changeQty(item.id, -1)}>−</button>
                         <span>{item.qty}</span>
