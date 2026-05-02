@@ -317,7 +317,7 @@ function App() {
             <button onClick={() => sendToWhatsApp("Hola, me gustaría hacer una consulta.")} className="contact-link">📱 WhatsApp</button>
             <a href="https://instagram.com" target="_blank" rel="noreferrer" className="contact-link">📷 Instagram</a>
             <a href="https://facebook.com" target="_blank" rel="noreferrer" className="contact-link">👍 Facebook</a>
-            <a href="https://tiktok.com" target="_blank" rel="noreferrer" className="contact-link">🎵 TikTok</a>
+            <a href="https://www.tiktok.com/@shanny.miscelanea?_r=1&_t=ZS-961tRNcxQiS" target="_blank" rel="noreferrer" className="contact-link">🎵 TikTok</a>
           </div>
         </div>
       </section>
